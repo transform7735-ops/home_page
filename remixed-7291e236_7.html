@@ -333,25 +333,7 @@ function fSize(b){return b<1048576?(b/1024).toFixed(0)+'KB':(b/1048576).toFixed(
 function today(){const d=new Date();return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`}
 
 // ========== 데이터 ==========
-const SI={
- system:[
-  {icon:'📋',title:'굴착공사 안전관리 핸드북 2025',desc:'굴착공사 전 과정의 안전관리 절차를 수록한 핵심 지침서',tags:['핸드북','필독'],badge:'nb-law',date:'2025.03.01',isNew:true,files:[]},
-  {icon:'⚖️',title:'도시가스사업법 관련 고시 모음',desc:'굴착공사와 관련된 도시가스 법령 및 고시 전문',tags:['법령','고시'],badge:'nb-law',date:'2025.01.10',isNew:false,files:[]},
-  {icon:'📐',title:'지하시설물 위치확인 기술기준',desc:'지하시설물 위치 탐지 방법 및 표시 기준 안내',tags:['기준','위치확인'],badge:'nb-law',date:'2024.11.05',isNew:false,files:[]}
- ],
- edu:[
-  {icon:'🎬',title:'굴착공사 안전교육 동영상 (2025)',desc:'현장 실무자 대상 안전교육 영상 시리즈',tags:['동영상','실무'],badge:'nb-edu',date:'2025.02.14',isNew:true,files:[]},
-  {icon:'📚',title:'굴착공사 교육 교재 PDF',desc:'온·오프라인 교육 공통 교재',tags:['교재','PDF'],badge:'nb-edu',date:'2025.01.20',isNew:false,files:[]}
- ],
- pr:[
-  {icon:'🖼',title:'지하시설물 보호 카드뉴스 (2025)',desc:'일반 시민 대상 카드뉴스',tags:['카드뉴스','홍보'],badge:'nb-pr',date:'2025.01.15',isNew:true,files:[]},
-  {icon:'📊',title:'굴착사고 예방 인포그래픽',desc:'연도별 굴착사고 통계 및 예방 수칙',tags:['인포그래픽','통계'],badge:'nb-pr',date:'2024.12.10',isNew:false,files:[]}
- ],
- notice:[
-  {icon:'🔔',title:'굴착공사 사전확인 시스템 개선 안내',desc:'신규 기능 및 UI 개선 사항 안내',tags:['공지','시스템'],badge:'nb-notice',date:'2025.01.28',isNew:true,files:[]},
-  {icon:'❓',title:'자주 묻는 질문 (FAQ) 업데이트',desc:'현장 질문 30가지 답변 정리',tags:['FAQ'],badge:'nb-notice',date:'2024.12.05',isNew:false,files:[]}
- ]
-};
+const SI={system:[],edu:[],pr:[],notice:[]};
 const NI=[
  {type:'nb-law',text:'굴착공사 안전관리 기준 개정 고시',date:'2025.03.01',isNew:true},
  {type:'nb-edu',text:'2025년 상반기 안전교육 일정 안내',date:'2025.02.14',isNew:true},
@@ -359,6 +341,42 @@ const NI=[
  {type:'nb-pr',text:'지하시설물 보호 카드뉴스 배포',date:'2025.01.15',isNew:false},
  {type:'nb-law',text:'도시가스사업법 시행규칙 개정',date:'2024.12.20',isNew:false}
 ];
+
+// ========== DB에서 자료 로드 ==========
+async function loadItems(){
+ try{
+  const{data,error}=await sb.from('items').select('*').order('created_at',{ascending:false});
+  if(error){console.error('DB로드실패:',error);return}
+  // 섹션별로 분류
+  for(const k in SI)SI[k]=[];
+  data.forEach(r=>{
+   if(SI[r.section]){
+    SI[r.section].push({id:r.id,icon:r.icon,title:r.title,desc:r.description,tags:r.tags||[],badge:r.badge,date:r.date,isNew:r.is_new,files:r.files||[]});
+   }
+  });
+  // DB가 비어있으면 기본 데이터 삽입
+  if(data.length===0)await seedDefaults();
+  updCnt();if(aSec)rndTh(aSec);
+  console.log('DB 로드 완료:',data.length,'건');
+ }catch(e){console.error('loadItems:',e)}
+}
+
+async function seedDefaults(){
+ const defs=[
+  {section:'system',icon:'📋',title:'굴착공사 안전관리 핸드북 2025',description:'굴착공사 전 과정의 안전관리 절차를 수록한 핵심 지침서',tags:['핸드북','필독'],badge:'nb-law',date:'2025.03.01',is_new:true,files:[]},
+  {section:'system',icon:'⚖️',title:'도시가스사업법 관련 고시 모음',description:'굴착공사와 관련된 도시가스 법령 및 고시 전문',tags:['법령','고시'],badge:'nb-law',date:'2025.01.10',is_new:false,files:[]},
+  {section:'system',icon:'📐',title:'지하시설물 위치확인 기술기준',description:'지하시설물 위치 탐지 방법 및 표시 기준 안내',tags:['기준','위치확인'],badge:'nb-law',date:'2024.11.05',is_new:false,files:[]},
+  {section:'edu',icon:'🎬',title:'굴착공사 안전교육 동영상 (2025)',description:'현장 실무자 대상 안전교육 영상 시리즈',tags:['동영상','실무'],badge:'nb-edu',date:'2025.02.14',is_new:true,files:[]},
+  {section:'edu',icon:'📚',title:'굴착공사 교육 교재 PDF',description:'온·오프라인 교육 공통 교재',tags:['교재','PDF'],badge:'nb-edu',date:'2025.01.20',is_new:false,files:[]},
+  {section:'pr',icon:'🖼',title:'지하시설물 보호 카드뉴스 (2025)',description:'일반 시민 대상 카드뉴스',tags:['카드뉴스','홍보'],badge:'nb-pr',date:'2025.01.15',is_new:true,files:[]},
+  {section:'pr',icon:'📊',title:'굴착사고 예방 인포그래픽',description:'연도별 굴착사고 통계 및 예방 수칙',tags:['인포그래픽','통계'],badge:'nb-pr',date:'2024.12.10',is_new:false,files:[]},
+  {section:'notice',icon:'🔔',title:'굴착공사 사전확인 시스템 개선 안내',description:'신규 기능 및 UI 개선 사항 안내',tags:['공지','시스템'],badge:'nb-notice',date:'2025.01.28',is_new:true,files:[]},
+  {section:'notice',icon:'❓',title:'자주 묻는 질문 (FAQ) 업데이트',description:'현장 질문 30가지 답변 정리',tags:['FAQ'],badge:'nb-notice',date:'2024.12.05',is_new:false,files:[]}
+ ];
+ const{error}=await sb.from('items').insert(defs);
+ if(error)console.error('기본데이터삽입실패:',error);
+ else await loadItems();
+}
 
 // ========== 카운트 ==========
 function updCnt(){for(const k in SI)document.getElementById('cn-'+k).textContent=SI[k].length}
@@ -399,7 +417,16 @@ function rndTh(s){
   return `<div class="tc" onclick="openDT('${s}',${ri})">${isAdm?`<button class="tc-del" onclick="event.stopPropagation();delItem('${s}',${ri})">✕ 삭제</button>`:''}<div class="tc-top"><div class="tc-icon ${m.ic}">${it.icon}</div>${it.isNew?'<span class="tc-new">NEW</span>':''}</div><div class="tc-title">${it.title}</div>${it.desc?`<div class="tc-desc">${it.desc}</div>`:''}<div class="tc-tags">${it.tags.map(t=>`<span class="tt">${t}</span>`).join('')}</div>${fh}<div class="tc-foot"><span class="tc-date">${it.date}</span><button class="tc-link" style="color:${m.ac}">자세히 →</button></div></div>`;
  }).join('');
 }
-function delItem(s,i){if(confirm('삭제하시겠습니까?')){SI[s].splice(i,1);updCnt();bldFil(s);rndTh(s)}}
+async function delItem(s,i){
+ if(confirm('삭제하시겠습니까?')){
+  const item=SI[s][i];
+  if(item.id){
+   const{error}=await sb.from('items').delete().eq('id',item.id);
+   if(error)console.error('DB삭제실패:',error);
+  }
+  SI[s].splice(i,1);updCnt();bldFil(s);rndTh(s);
+ }
+}
 
 // ========== 상세보기 ==========
 function openDT(s,i){
@@ -491,9 +518,17 @@ async function saveItem(){
   const desc=document.getElementById('iDesc').value.trim();
   const tags=document.getElementById('iTags').value.trim().split(',').map(t=>t.trim()).filter(Boolean);
   const badge=document.getElementById('iBadge').value;
-  SI[aSec].unshift({icon:sIcon,title,desc,tags,badge,date:today(),isNew:true,files});
+
+  // DB에 저장
+  const{data:dbData,error:dbErr}=await sb.from('items').insert({
+   section:aSec,icon:sIcon,title,description:desc,tags,badge,date:today(),is_new:true,files
+  }).select().single();
+  if(dbErr){console.error('DB저장실패:',dbErr);throw new Error('DB 저장 실패: '+dbErr.message)}
+  const inserted=dbData;
+
+  SI[aSec].unshift({id:inserted.id,icon:sIcon,title,desc,tags,badge,date:today(),isNew:true,files});
   updCnt();bldFil(aSec);rndTh(aSec);closeM('mAdd');
-  console.log('자료 추가 완료');
+  console.log('자료 추가 완료, DB id:',inserted.id);
  }catch(e){
   console.error('saveItem 오류:',e);
   alert('⚠️ '+e.message);
@@ -536,8 +571,8 @@ async function testSB(){
 }
 
 // ========== 초기화 ==========
-updCnt();rndN();
+rndN();
+loadItems(); // DB에서 자료 로드
 </script>
 </body>
 </html>
-
