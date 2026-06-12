@@ -470,7 +470,8 @@ async function saveItem(){
    for(let i=0;i<aFiles.length;i++){
     btn.textContent=`업로드 중 (${i+1}/${aFiles.length})...`;
     const f=aFiles[i];
-    const sn=`${Date.now()}_${f.name.replace(/[^a-zA-Z0-9._가-힣]/g,'_')}`;
+    const ext=f.name.split('.').pop();
+    const sn=`${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
     const fp=`${aSec}/${sn}`;
     console.log('업로드:',fp,'크기:',f.size);
 
@@ -539,3 +540,4 @@ updCnt();rndN();
 </script>
 </body>
 </html>
+
