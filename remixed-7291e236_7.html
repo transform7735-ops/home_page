@@ -399,7 +399,7 @@ async function seedDefaults(){
 }
 
 // ========== 카운트 ==========
-function updCnt(){for(const k in SI)document.getElementById('cn-'+k).textContent=SI[k].length}
+function updCnt(){for(const k in SI){const el=document.getElementById('cn-'+k);if(el)el.textContent=SI[k].length}}
 
 // ========== 섹션 ==========
 function togSec(s){aSec===s?closeSec():openSec(s)}
@@ -438,14 +438,16 @@ function rndTh(s){
  }).join('');
 }
 async function delItem(s,i){
- if(confirm('삭제하시겠습니까?')){
-  const item=SI[s][i];
+ if(!confirm('삭제하시겠습니까?'))return;
+ const item=SI[s][i];
+ try{
   if(item.id){
    const{error}=await sb.from('items').delete().eq('id',item.id);
-   if(error)console.error('DB삭제실패:',error);
+   if(error){console.error('DB삭제실패:',error);alert('삭제 실패: '+error.message);return}
+   console.log('DB 삭제 완료, id:',item.id);
   }
   SI[s].splice(i,1);updCnt();bldFil(s);rndTh(s);
- }
+ }catch(e){console.error('delItem오류:',e);alert('삭제 오류: '+e.message)}
 }
 
 // ========== 상세보기 ==========
